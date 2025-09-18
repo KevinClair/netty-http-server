@@ -1,5 +1,6 @@
 package com.github.kevin.netty_http_server.server;
 
+import com.github.kevin.netty_http_server.handlers.RequestHandlerFactory;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -17,7 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class HttpServer {
 
-    public HttpServer(HttpServerProperties properties) {
+    public HttpServer(HttpServerProperties properties, RequestHandlerFactory requestHandlerFactory) {
         EventLoopGroup bossGroup = new NioEventLoopGroup();
         EventLoopGroup workerGroup = new NioEventLoopGroup();
         try {
@@ -33,7 +34,7 @@ public class HttpServer {
                                     .addLast(new HttpServerCodec())
                                     .addLast(new HttpObjectAggregator(5 * 1024 * 1024))  // merge request & reponse to FULL
                                     // 添加处理器
-                                    .addLast();
+                                    .addLast(new HttpServerHandler(requestHandlerFactory));
                         }
                     })
                     .childOption(ChannelOption.SO_KEEPALIVE, true);
