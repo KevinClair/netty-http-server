@@ -22,4 +22,9 @@ public class RequestHandler {
      * 方法对象
      */
     private Method method;
+
+    /**
+     * 方法参数
+     */
+    private Object[] args;
 }

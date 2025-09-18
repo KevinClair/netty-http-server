@@ -28,7 +28,7 @@ public class HttpServerHandler extends io.netty.channel.SimpleChannelInboundHand
         // 获取请求方式
         HttpMethod httpMethod = msg.method();
 
-        String requestHandlerKey = HttpServerUtils.contactRequestHandlerKey(httpMethod.name(), uri);
+        String requestHandlerKey = HttpServerUtils.contactRequestHandlerKey(uri, httpMethod.name());
         // 获取请求处理器
         RequestHandler requestHandler = requestHandlerFactory.getRequestHandler(requestHandlerKey);
         if (Objects.isNull(requestHandler)) {
@@ -36,8 +36,12 @@ public class HttpServerHandler extends io.netty.channel.SimpleChannelInboundHand
 
         }
 
-        // todo 解析参数
-        Object invokeResponse = requestHandler.getMethod().invoke(requestHandler.getBean(), requestData);
+        Object invokeResponse = null;
+        if (requestHandler.getArgs().length == 0) {
+            invokeResponse = requestHandler.getMethod().invoke(requestHandler.getBean());
+        } else {
+            // todo 解析参数
+        }
         // write response
         FullHttpResponse fullHttpResponse = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, Unpooled.copiedBuffer(JSON.toJSONString(invokeResponse), CharsetUtil.UTF_8));   //  Unpooled.wrappedBuffer(responseJson)
         fullHttpResponse.headers().set(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON);
