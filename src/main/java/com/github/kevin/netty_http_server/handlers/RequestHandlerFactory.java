@@ -37,7 +37,8 @@ public class RequestHandlerFactory implements ApplicationListener<ApplicationRea
                         if (handlerMap.containsKey(requestHandlerKey)) {
                             throw new HttpServerException("Duplicate request mapping: " + requestHandlerKey);
                         }
-                        handlerMap.put(requestHandlerKey, new RequestHandler(bean, method));
+                        handlerMap.put(requestHandlerKey, new RequestHandler(bean, method, method.getParameterTypes()));
+                        log.info("HttpServer register request mapping: {}, method:{}", requestHandlerKey, bean.getClass().getName() + "#" + method.getName());
                     }
                 }
             }
