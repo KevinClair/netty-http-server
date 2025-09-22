@@ -1,6 +1,7 @@
 package com.github.kevin.netty_http_server.handlers;
 
 import com.github.kevin.netty_http_server.common.HttpServerException;
+import com.github.kevin.netty_http_server.common.HttpServerUtils;
 import com.github.kevin.netty_http_server.handlers.annotation.HttpServerRequestController;
 import com.github.kevin.netty_http_server.handlers.annotation.HttpServerRequestMapping;
 import com.github.kevin.netty_http_server.handlers.enums.RequestMethod;
@@ -25,13 +26,12 @@ public class RequestHandlerFactory implements ApplicationListener<ApplicationRea
         // 扫描所有包含HttpServerRequestController注解的Bean
         applicationContext.getBeansWithAnnotation(HttpServerRequestController.class).forEach((name, bean) -> {
             HttpServerRequestController requestController = AnnotationUtils.findAnnotation(bean.getClass(), HttpServerRequestController.class);
-            String parentPath = requestController.path().startsWith("/") ? requestController.path() : "/" + requestController.path();
             // 扫描类中包含所有HttpServerRequestMapping注解的方法
             Method[] methods = bean.getClass().getMethods();
             for (Method method : methods) {
                 if (method.isAnnotationPresent(HttpServerRequestMapping.class)) {
                     HttpServerRequestMapping requestMapping = AnnotationUtils.findAnnotation(method, HttpServerRequestMapping.class);
-                    String fullPath = parentPath + (requestMapping.path().startsWith("/") ? requestMapping.path() : "/" + requestMapping.path());
+                    String fullPath = HttpServerUtils.joinPaths(requestController.path(), requestMapping.path());
                     // 解析请求方法
                     for (RequestMethod requestMethod : requestMapping.method()) {
                         String requestHandlerKey = requestMethod.name() + ":" + fullPath;

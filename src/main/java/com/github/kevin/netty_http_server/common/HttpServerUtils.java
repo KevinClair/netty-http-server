@@ -12,4 +12,24 @@ public class HttpServerUtils {
     public static String contactRequestHandlerKey(String path, String method) {
         return method + ":" + path;
     }
+
+    public static String joinPaths(String requestControllerPath, String requestMappingPath) {
+        if (requestControllerPath == null || requestControllerPath.isEmpty()) {
+            requestControllerPath = "/";
+        } else if (!requestControllerPath.startsWith("/")) {
+            requestControllerPath = "/" + requestControllerPath;
+        }
+
+        if (requestMappingPath == null || requestMappingPath.isEmpty()) {
+            requestMappingPath = "";
+        } else if (requestMappingPath.startsWith("/")) {
+            requestMappingPath = requestMappingPath.substring(1);
+        }
+
+        if (requestControllerPath.endsWith("/")) {
+            requestControllerPath = requestControllerPath.substring(0, requestControllerPath.length() - 1);
+        }
+
+        return requestControllerPath + "/" + requestMappingPath;
+    }
 }
