@@ -41,8 +41,9 @@ public class HttpServer {
 
             // bind
             ChannelFuture channelFuture = bootstrap.bind(properties.getPort()).sync();
-
+            log.info("HttpServer started on port {}", properties.getPort());
             channelFuture.channel().closeFuture().addListener(future -> {
+                log.info("HttpServer closed");
                 // close server
                 bossGroup.shutdownGracefully();
                 workerGroup.shutdownGracefully();
