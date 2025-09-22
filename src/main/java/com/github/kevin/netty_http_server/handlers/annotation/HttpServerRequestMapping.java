@@ -1,6 +1,7 @@
 package com.github.kevin.netty_http_server.handlers.annotation;
 
 import com.github.kevin.netty_http_server.handlers.enums.RequestMethod;
+import org.springframework.core.annotation.AliasFor;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -11,12 +12,16 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface HttpServerRequestMapping {
 
+    @AliasFor("path")
+    String value() default "";
+
     /**
-     * 路径映射
+     *  路由映射
      *
      * @return
      */
-    String path();
+    @AliasFor("value")
+    String path() default "";
 
     /**
      * 请求方式

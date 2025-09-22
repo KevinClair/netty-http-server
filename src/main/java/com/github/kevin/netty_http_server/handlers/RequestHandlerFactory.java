@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationListener;
+import org.springframework.core.annotation.AnnotationUtils;
 
 import java.lang.reflect.Method;
 import java.util.HashMap;
@@ -23,22 +24,22 @@ public class RequestHandlerFactory implements ApplicationListener<ApplicationRea
         ApplicationContext applicationContext = event.getApplicationContext();
         // 扫描所有包含HttpServerRequestController注解的Bean
         applicationContext.getBeansWithAnnotation(HttpServerRequestController.class).forEach((name, bean) -> {
-            HttpServerRequestController annotation = bean.getClass().getAnnotation(HttpServerRequestController.class);
-            String parentPath = annotation.path().startsWith("/") ? annotation.path() : "/" + annotation.path();
+            HttpServerRequestController requestController = AnnotationUtils.findAnnotation(bean.getClass(), HttpServerRequestController.class);
+            String parentPath = requestController.path().startsWith("/") ? requestController.path() : "/" + requestController.path();
             // 扫描类中包含所有HttpServerRequestMapping注解的方法
             Method[] methods = bean.getClass().getMethods();
             for (Method method : methods) {
                 if (method.isAnnotationPresent(HttpServerRequestMapping.class)) {
-                    HttpServerRequestMapping mapping = method.getAnnotation(HttpServerRequestMapping.class);
-                    String fullPath = parentPath + (mapping.path().startsWith("/") ? mapping.path() : "/" + mapping.path());
+                    HttpServerRequestMapping requestMapping = AnnotationUtils.findAnnotation(method, HttpServerRequestMapping.class);
+                    String fullPath = parentPath + (requestMapping.path().startsWith("/") ? requestMapping.path() : "/" + requestMapping.path());
                     // 解析请求方法
-                    for (RequestMethod requestMethod : mapping.method()) {
+                    for (RequestMethod requestMethod : requestMapping.method()) {
                         String requestHandlerKey = requestMethod.name() + ":" + fullPath;
                         if (handlerMap.containsKey(requestHandlerKey)) {
-                            throw new HttpServerException("Duplicate request mapping: " + requestHandlerKey);
+                            throw new HttpServerException("Duplicate request requestMapping: " + requestHandlerKey);
                         }
                         handlerMap.put(requestHandlerKey, new RequestHandler(bean, method, method.getParameterTypes()));
-                        log.info("HttpServer register request mapping: {}, method:{}", requestHandlerKey, bean.getClass().getName() + "#" + method.getName());
+                        log.info("HttpServer register request requestMapping: {}, method:{}", requestHandlerKey, bean.getClass().getName() + "#" + method.getName());
                     }
                 }
             }
