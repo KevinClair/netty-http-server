@@ -2,8 +2,10 @@ package com.github.kevin.netty_http_server.handlers;
 
 import com.github.kevin.netty_http_server.common.HttpServerException;
 import com.github.kevin.netty_http_server.common.HttpServerUtils;
+import com.github.kevin.netty_http_server.handlers.annotation.HttpServerRequestBody;
 import com.github.kevin.netty_http_server.handlers.annotation.HttpServerRequestController;
 import com.github.kevin.netty_http_server.handlers.annotation.HttpServerRequestMapping;
+import com.github.kevin.netty_http_server.handlers.enums.ParameterTypeEnum;
 import com.github.kevin.netty_http_server.handlers.enums.RequestMethod;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -11,8 +13,12 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationListener;
 import org.springframework.core.annotation.AnnotationUtils;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -38,7 +44,25 @@ public class RequestHandlerFactory implements ApplicationListener<ApplicationRea
                         if (handlerMap.containsKey(requestHandlerKey)) {
                             throw new HttpServerException("Duplicate request requestMapping: " + requestHandlerKey);
                         }
-                        handlerMap.put(requestHandlerKey, new RequestHandler(bean, method, method.getParameterTypes()));
+                        Parameter[] parameters = method.getParameters();
+                        if (parameters.length == 0) {
+                            handlerMap.put(requestHandlerKey, new RequestHandler(bean, method, null));
+                            log.info("HttpServer register request requestMapping: {}, method:{}", requestHandlerKey, bean.getClass().getName() + "#" + method.getName());
+                            continue;
+                        }
+                        // 解析parameters中被@HttpServerRequestBody注解的参数
+                        for (Parameter parameter : parameters) {
+                            List<ParameterObjects> parameterObjects = new ArrayList<>();
+                            for (Annotation annotation : parameter.getAnnotations()) {
+                                ParameterObjects.ParameterObjectsBuilder parameterObjectsBuilder = ParameterObjects.builder();
+                                if (annotation instanceof HttpServerRequestBody) {
+                                    // 解析参数类型
+                                    HttpServerRequestBody httpServerRequestBody = (HttpServerRequestBody) annotation;
+                                    parameterObjects.add(parameterObjectsBuilder.required(httpServerRequestBody.required()).parameterType(ParameterTypeEnum.REQUEST_BODY).parameterClass(parameter.getType()).build());
+                                }
+                            }
+                            handlerMap.put(requestHandlerKey, new RequestHandler(bean, method, parameterObjects));
+                        }
                         log.info("HttpServer register request requestMapping: {}, method:{}", requestHandlerKey, bean.getClass().getName() + "#" + method.getName());
                     }
                 }
