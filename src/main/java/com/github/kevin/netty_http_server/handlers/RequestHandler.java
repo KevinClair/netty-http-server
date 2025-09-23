@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.lang.reflect.Method;
+import java.util.List;
 
 @Data
 @AllArgsConstructor
@@ -24,7 +25,7 @@ public class RequestHandler {
     private Method method;
 
     /**
-     * 方法参数
+     * 参数对象集合
      */
-    private Object[] args;
+    private List<ParameterObjects> parameterObjects;
 }
