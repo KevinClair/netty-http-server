@@ -19,5 +19,10 @@ public enum ParameterTypeEnum {
     /**
      * 请求路径
      */
-    REQUEST_PATH
+    REQUEST_PATH,
+
+    /**
+     * 未知
+     */
+    UNKNOWN
 }

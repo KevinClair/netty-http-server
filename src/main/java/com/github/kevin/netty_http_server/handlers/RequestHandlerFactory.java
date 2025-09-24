@@ -51,18 +51,24 @@ public class RequestHandlerFactory implements ApplicationListener<ApplicationRea
                             continue;
                         }
                         // 解析parameters中被@HttpServerRequestBody注解的参数
+                        List<ParameterObjects> parameterObjects = new ArrayList<>();
                         for (Parameter parameter : parameters) {
-                            List<ParameterObjects> parameterObjects = new ArrayList<>();
+                            if (parameter.getAnnotations().length == 0) {
+                                parameterObjects.add(ParameterObjects.builder().required(false).parameterType(ParameterTypeEnum.UNKNOWN).parameterClass(parameter.getType()).build());
+                                continue;
+                            }
                             for (Annotation annotation : parameter.getAnnotations()) {
                                 ParameterObjects.ParameterObjectsBuilder parameterObjectsBuilder = ParameterObjects.builder();
                                 if (annotation instanceof HttpServerRequestBody) {
                                     // 解析参数类型
                                     HttpServerRequestBody httpServerRequestBody = (HttpServerRequestBody) annotation;
                                     parameterObjects.add(parameterObjectsBuilder.required(httpServerRequestBody.required()).parameterType(ParameterTypeEnum.REQUEST_BODY).parameterClass(parameter.getType()).build());
+                                } else {
+                                    // todo 解析其他参数
                                 }
                             }
-                            handlerMap.put(requestHandlerKey, new RequestHandler(bean, method, parameterObjects));
                         }
+                        handlerMap.put(requestHandlerKey, new RequestHandler(bean, method, parameterObjects));
                         log.info("HttpServer register request requestMapping: {}, method:{}", requestHandlerKey, bean.getClass().getName() + "#" + method.getName());
                     }
                 }

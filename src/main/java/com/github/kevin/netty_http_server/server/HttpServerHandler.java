@@ -71,6 +71,7 @@ public class HttpServerHandler extends io.netty.channel.SimpleChannelInboundHand
                     }
                     case REQUEST_PATH -> log.info("");
                     case REQUEST_PARAM -> log.info("");
+                    case UNKNOWN -> arguments.add(null);
                 }
 
             }
