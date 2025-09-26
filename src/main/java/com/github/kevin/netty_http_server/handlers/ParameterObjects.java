@@ -18,6 +18,11 @@ public class ParameterObjects {
     private Boolean required;
 
     /**
+     * 参数值
+     */
+    private String value;
+
+    /**
      * 参数类型
      */
     private ParameterTypeEnum parameterType;

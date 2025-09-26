@@ -32,11 +32,11 @@ public class HttpServerHandler extends io.netty.channel.SimpleChannelInboundHand
         // 获取请求参数
         String requestData = msg.content().toString(CharsetUtil.UTF_8);
         // 获取Uri
-        String uri = msg.uri();
+        QueryStringDecoder queryStringDecoder = new QueryStringDecoder(msg.uri());
         // 获取请求方式
         HttpMethod httpMethod = msg.method();
 
-        String requestHandlerKey = HttpServerUtils.contactRequestHandlerKey(uri, httpMethod.name());
+        String requestHandlerKey = HttpServerUtils.contactRequestHandlerKey(queryStringDecoder.path(), httpMethod.name());
         // 获取请求处理器
         RequestHandler requestHandler = requestHandlerFactory.getRequestHandler(requestHandlerKey);
         if (Objects.isNull(requestHandler)) {
@@ -55,7 +55,7 @@ public class HttpServerHandler extends io.netty.channel.SimpleChannelInboundHand
                         if (requestData == null || requestData.isEmpty()) {
                             if (parameterObject.getRequired()) {
                                 // 返回 参数缺失
-                                this.sendResponse(ctx, msg, JSON.toJSONString(BaseResponse.builder().msg("invalid parameter error").code(302).data("Missing required parameter: " + parameterObject.getParameterClass().getName()).build()));
+                                sendInvalidParameterError(ctx, msg, parameterObject, requestHandlerKey);
                                 return;
                             }
                             arguments.add(null);
@@ -64,13 +64,32 @@ public class HttpServerHandler extends io.netty.channel.SimpleChannelInboundHand
                                 // 处理JSON反序列化异常，例如传递的不是json类型的数据
                                 arguments.add(JSON.parseObject(requestData, parameterObject.getParameterClass()));
                             } catch (JSONException exception) {
-                                this.sendResponse(ctx, msg, JSON.toJSONString(BaseResponse.builder().msg("invalid parameter error").code(303).data("Invalid parameter format, JSON parse error for path: " + requestHandlerKey).build()));
+                                this.sendJsonParseError(ctx, msg, parameterObject, requestHandlerKey);
                                 return;
                             }
                         }
                     }
-                    case REQUEST_PATH -> log.info("");
-                    case REQUEST_PARAM -> log.info("");
+                    case REQUEST_PATH_VARIABLE -> log.info("");
+                    case REQUEST_PARAM -> {
+                        // 解析uri中的Param参数，然后映射到对应的参数对象中
+                        List<String> paramValues = queryStringDecoder.parameters().get(parameterObject.getValue());
+                        if (CollectionUtils.isEmpty(paramValues)) {
+                            if (parameterObject.getRequired()) {
+                                // 返回 参数缺失
+                                this.sendInvalidParameterError(ctx, msg, parameterObject, requestHandlerKey);
+                                return;
+                            }
+                            arguments.add(null);
+                        } else {
+                            // 将参数值转换为目标类型
+                            try {
+                                arguments.add(JSON.parseObject(paramValues.get(0), parameterObject.getParameterClass()));
+                            } catch (JSONException exception) {
+                                this.sendJsonParseError(ctx, msg, parameterObject, requestHandlerKey);
+                                return;
+                            }
+                        }
+                    }
                     case UNKNOWN -> arguments.add(null);
                 }
 
@@ -79,6 +98,15 @@ public class HttpServerHandler extends io.netty.channel.SimpleChannelInboundHand
         }
         this.sendResponse(ctx, msg, JSON.toJSONString(invokeResponse));
     }
+
+    private void sendInvalidParameterError(ChannelHandlerContext ctx, FullHttpRequest msg, ParameterObjects parameterObject, String requestHandlerKey) {
+        this.sendResponse(ctx, msg, JSON.toJSONString(BaseResponse.builder().msg("invalid parameter error").code(302).data("Missing required parameter: " + parameterObject.getValue() + " for path " + requestHandlerKey).build()));
+    }
+
+    private void sendJsonParseError(ChannelHandlerContext ctx, FullHttpRequest msg, ParameterObjects parameterObject, String requestHandlerKey) {
+        this.sendResponse(ctx, msg, JSON.toJSONString(BaseResponse.builder().msg("json parse error").code(303).data("JSON parse error: " + parameterObject.getValue() + " for path: " + requestHandlerKey).build()));
+    }
+
 
     private void sendResponse(ChannelHandlerContext ctx, FullHttpRequest msg, String responseData) {
         // write response
@@ -97,3 +125,4 @@ public class HttpServerHandler extends io.netty.channel.SimpleChannelInboundHand
         ctx.close();
     }
 }
+

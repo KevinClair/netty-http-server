@@ -2,9 +2,7 @@ package com.github.kevin.netty_http_server.handlers;
 
 import com.github.kevin.netty_http_server.common.HttpServerException;
 import com.github.kevin.netty_http_server.common.HttpServerUtils;
-import com.github.kevin.netty_http_server.handlers.annotation.HttpServerRequestBody;
-import com.github.kevin.netty_http_server.handlers.annotation.HttpServerRequestController;
-import com.github.kevin.netty_http_server.handlers.annotation.HttpServerRequestMapping;
+import com.github.kevin.netty_http_server.handlers.annotation.*;
 import com.github.kevin.netty_http_server.handlers.enums.ParameterTypeEnum;
 import com.github.kevin.netty_http_server.handlers.enums.RequestMethod;
 import lombok.extern.slf4j.Slf4j;
@@ -59,12 +57,17 @@ public class RequestHandlerFactory implements ApplicationListener<ApplicationRea
                             }
                             for (Annotation annotation : parameter.getAnnotations()) {
                                 ParameterObjects.ParameterObjectsBuilder parameterObjectsBuilder = ParameterObjects.builder();
-                                if (annotation instanceof HttpServerRequestBody) {
+                                if (annotation instanceof HttpServerRequestBody httpServerRequestBody) {
                                     // 解析参数类型
-                                    HttpServerRequestBody httpServerRequestBody = (HttpServerRequestBody) annotation;
-                                    parameterObjects.add(parameterObjectsBuilder.required(httpServerRequestBody.required()).parameterType(ParameterTypeEnum.REQUEST_BODY).parameterClass(parameter.getType()).build());
+                                    parameterObjects.add(parameterObjectsBuilder.required(httpServerRequestBody.required()).parameterType(ParameterTypeEnum.REQUEST_BODY).parameterClass(parameter.getType()).value(parameter.getName()).build());
+                                } else if (annotation instanceof HttpServerRequestParam httpServerRequestParam) {
+                                    // 解析RequestParam参数
+                                    parameterObjects.add(parameterObjectsBuilder.required(httpServerRequestParam.required()).parameterType(ParameterTypeEnum.REQUEST_PARAM).parameterClass(parameter.getType()).value(httpServerRequestParam.value()).build());
+                                } else if (annotation instanceof HttpServerRequestPathVariable) {
+                                    // 解析PathVariable参数
+                                    parameterObjects.add(parameterObjectsBuilder.required(true).parameterType(ParameterTypeEnum.REQUEST_PATH_VARIABLE).parameterClass(parameter.getType()).value(parameter.getName()).build());
                                 } else {
-                                    // todo 解析其他参数
+                                    parameterObjects.add(parameterObjectsBuilder.required(false).parameterType(ParameterTypeEnum.UNKNOWN).parameterClass(parameter.getType()).build());
                                 }
                             }
                         }
