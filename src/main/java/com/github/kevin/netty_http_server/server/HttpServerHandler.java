@@ -16,9 +16,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.CollectionUtils;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 @ChannelHandler.Sharable
 @RequiredArgsConstructor
@@ -83,7 +81,29 @@ public class HttpServerHandler extends io.netty.channel.SimpleChannelInboundHand
                         } else {
                             // 将参数值转换为目标类型
                             try {
-                                arguments.add(JSON.parseObject(paramValues.get(0), parameterObject.getParameterClass()));
+                                if (parameterObject.getParameterClass().equals(String.class)) {
+                                    arguments.add(paramValues.get(0));
+                                } else if (parameterObject.getParameterClass().equals(Integer.class) || parameterObject.getParameterClass().equals(int.class)) {
+                                    arguments.add(Integer.parseInt(paramValues.get(0)));
+                                } else if (parameterObject.getParameterClass().equals(Long.class) || parameterObject.getParameterClass().equals(long.class)) {
+                                    arguments.add(Long.parseLong(paramValues.get(0)));
+                                } else if (parameterObject.getParameterClass().equals(Double.class) || parameterObject.getParameterClass().equals(double.class)) {
+                                    arguments.add(Double.parseDouble(paramValues.get(0)));
+                                } else if (parameterObject.getParameterClass().equals(Float.class) || parameterObject.getParameterClass().equals(float.class)) {
+                                    arguments.add(Float.parseFloat(paramValues.get(0)));
+                                } else if (parameterObject.getParameterClass().equals(Boolean.class) || parameterObject.getParameterClass().equals(boolean.class)) {
+                                    arguments.add(Boolean.parseBoolean(paramValues.get(0)));
+                                } else if (parameterObject.getParameterClass().equals(Short.class) || parameterObject.getParameterClass().equals(short.class)) {
+                                    arguments.add(Short.parseShort(paramValues.get(0)));
+                                } else if (parameterObject.getParameterClass().equals(Byte.class) || parameterObject.getParameterClass().equals(byte.class)) {
+                                    arguments.add(Byte.parseByte(paramValues.get(0)));
+                                } else if (parameterObject.getParameterClass().equals(List.class) || parameterObject.getParameterClass().equals(ArrayList.class)) {
+                                    arguments.add(Arrays.stream(paramValues.get(0).split(",")).toList());
+                                } else if (parameterObject.getParameterClass().equals(Map.class) || parameterObject.getParameterClass().equals(HashMap.class)) {
+                                    arguments.add(JSON.parseObject(paramValues.get(0), parameterObject.getParameterClass()));
+                                } else {
+                                    arguments.add(JSON.parseObject(paramValues.get(0), parameterObject.getParameterClass()));
+                                }
                             } catch (JSONException exception) {
                                 this.sendJsonParseError(ctx, msg, parameterObject, requestHandlerKey);
                                 return;
