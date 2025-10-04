@@ -67,7 +67,45 @@ public class HttpServerHandler extends io.netty.channel.SimpleChannelInboundHand
                             }
                         }
                     }
-                    case REQUEST_PATH_VARIABLE -> log.info("");
+                    case REQUEST_PATH_VARIABLE -> {
+                        // 解析路径变量
+                        Map<String, String> pathVariables = HttpServerUtils.extractPathVariables(requestHandler, requestHandlerKey);
+                        String pathVariableValue = pathVariables.get(parameterObject.getValue());
+                        if (pathVariableValue == null || pathVariableValue.isEmpty()) {
+                            if (parameterObject.getRequired()) {
+                                // 返回 参数缺失
+                                this.sendInvalidParameterError(ctx, msg, parameterObject, requestHandlerKey);
+                                return;
+                            }
+                            arguments.add(null);
+                        } else {
+                            // 将路径变量值转换为目标类型
+                            try {
+                                if (parameterObject.getParameterClass().equals(String.class)) {
+                                    arguments.add(pathVariableValue);
+                                } else if (parameterObject.getParameterClass().equals(Integer.class) || parameterObject.getParameterClass().equals(int.class)) {
+                                    arguments.add(Integer.parseInt(pathVariableValue));
+                                } else if (parameterObject.getParameterClass().equals(Long.class) || parameterObject.getParameterClass().equals(long.class)) {
+                                    arguments.add(Long.parseLong(pathVariableValue));
+                                } else if (parameterObject.getParameterClass().equals(Double.class) || parameterObject.getParameterClass().equals(double.class)) {
+                                    arguments.add(Double.parseDouble(pathVariableValue));
+                                } else if (parameterObject.getParameterClass().equals(Float.class) || parameterObject.getParameterClass().equals(float.class)) {
+                                    arguments.add(Float.parseFloat(pathVariableValue));
+                                } else if (parameterObject.getParameterClass().equals(Boolean.class) || parameterObject.getParameterClass().equals(boolean.class)) {
+                                    arguments.add(Boolean.parseBoolean(pathVariableValue));
+                                } else if (parameterObject.getParameterClass().equals(Short.class) || parameterObject.getParameterClass().equals(short.class)) {
+                                    arguments.add(Short.parseShort(pathVariableValue));
+                                } else if (parameterObject.getParameterClass().equals(Byte.class) || parameterObject.getParameterClass().equals(byte.class)) {
+                                    arguments.add(Byte.parseByte(pathVariableValue));
+                                } else {
+                                    arguments.add(JSON.parseObject(pathVariableValue, parameterObject.getParameterClass()));
+                                }
+                            } catch (Exception exception) {
+                                this.sendJsonParseError(ctx, msg, parameterObject, requestHandlerKey);
+                                return;
+                            }
+                        }
+                    }
                     case REQUEST_PARAM -> {
                         // 解析uri中的Param参数，然后映射到对应的参数对象中
                         List<String> paramValues = queryStringDecoder.parameters().get(parameterObject.getValue());
