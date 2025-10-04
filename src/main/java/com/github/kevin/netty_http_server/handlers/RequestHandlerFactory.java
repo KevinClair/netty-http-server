@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 @Slf4j
 public class RequestHandlerFactory implements ApplicationListener<ApplicationReadyEvent> {
@@ -44,7 +45,7 @@ public class RequestHandlerFactory implements ApplicationListener<ApplicationRea
                         }
                         Parameter[] parameters = method.getParameters();
                         if (parameters.length == 0) {
-                            handlerMap.put(requestHandlerKey, new RequestHandler(bean, method, null));
+                            handlerMap.put(requestHandlerKey, new RequestHandler(requestHandlerKey, fullPath, Pattern.compile(requestHandlerKey.replaceAll("\\{([^/]+)}", "(?<$1>[^/]+)")), bean, method, null));
                             log.info("HttpServer register request requestMapping: {}, method:{}", requestHandlerKey, bean.getClass().getName() + "#" + method.getName());
                             continue;
                         }
@@ -71,7 +72,7 @@ public class RequestHandlerFactory implements ApplicationListener<ApplicationRea
                                 }
                             }
                         }
-                        handlerMap.put(requestHandlerKey, new RequestHandler(bean, method, parameterObjects));
+                        handlerMap.put(requestHandlerKey, new RequestHandler(requestHandlerKey, fullPath, Pattern.compile(requestHandlerKey.replaceAll("\\{([^/]+)}", "(?<$1>[^/]+)")), bean, method, parameterObjects));
                         log.info("HttpServer register request requestMapping: {}, method:{}", requestHandlerKey, bean.getClass().getName() + "#" + method.getName());
                     }
                 }
@@ -81,12 +82,20 @@ public class RequestHandlerFactory implements ApplicationListener<ApplicationRea
 
     /**
      * 获取请求处理器
+     * <p>
+     * 需要特殊情况，例如：GET:/api/{test}，对于请求路由是GET:/api/123，这种情况需要根据正则表达式来匹配
+     * </p>
      *
      * @param requestHandlerKey 请求处理器Key，格式为：请求方法:路径，例如 GET:/api/test
      * @return
      * @throws HttpServerException
      */
     public RequestHandler getRequestHandler(String requestHandlerKey) {
-        return handlerMap.get(requestHandlerKey);
+        // 直接匹配完整的key
+        if (handlerMap.containsKey(requestHandlerKey)) {
+            return handlerMap.get(requestHandlerKey);
+        }
+        // 匹配如果requestHandlerKey中包含路径参数，例如：GET:/api/{test}，对于请求路由是GET:/api/123，这种情况需要根据正则表达式PathPattern来匹配
+        return handlerMap.values().stream().filter(each -> each.getPathPattern().matcher(requestHandlerKey).find()).findFirst().orElse(null);
     }
 }
